@@ -18,6 +18,8 @@ Globals:
       Variables:
         MEETINGS_TABLE_NAME: !Ref Meetings
         ATTENDEES_TABLE_NAME: !Ref Attendees
+        POLL_TABLE_NAME: !Ref LivePoll
+        ANSWERPOLL_TABLE_NAME: !Ref LivePollResponse
         SQS_QUEUE_ARN: !GetAtt MeetingNotificationsQueue.Arn
         CONNECTIONS_TABLE_NAME: !Ref ConnectionsTable
         MESSAGING_WSS_URL: !Join ['', ['wss://', !Ref WebSocketMessagingApi, '.execute-api.', !Ref 'AWS::Region','.amazonaws.com/Prod']]
@@ -86,6 +88,38 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
+  LivePoll:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "MeetingId"
+          AttributeType: "S"
+        - AttributeName: "PollId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "MeetingId"
+          KeyType: "HASH"
+        - AttributeName: "PollId"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+  LivePollResponse:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "AttendeeId"
+          AttributeType: "S"
+        - AttributeName: "PollId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "AttendeeId"
+          KeyType: "HASH"
+        - AttributeName: "PollId"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
   MeetingNotificationsQueue:
     Type: AWS::SQS::Queue
   ChimeSdkIndexLambda:
@@ -100,6 +134,30 @@ Resources:
           Properties:
             Path: /
             Method: GET
+  CreatePollLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: handlers.createPoll
+      Runtime: nodejs10.x
+      CodeUri: src/
+      Events:
+        Api1:
+          Type: Api
+          Properties:
+            Path: /createpoll
+            Method: POST
+  ResponsePollLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: handlers.answerPoll
+      Runtime: nodejs10.x
+      CodeUri: src/
+      Events:
+        Api1:
+          Type: Api
+          Properties:
+            Path: /answerpoll
+            Method: POST
   ChimeSdkCreateMeetingLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -209,7 +267,7 @@ Resources:
       Queues:
         - Ref: MeetingNotificationsQueue
 
-# Messaging API
+  # Messaging API
 
   WebSocketMessagingApi:
     Type: AWS::ApiGatewayV2::Api
@@ -237,7 +295,7 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri:
         Fn::Sub:
-            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnConnectFunction.Arn}/invocations
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnConnectFunction.Arn}/invocations
   DisconnectRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
@@ -257,7 +315,7 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri:
         Fn::Sub:
-            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnDisconnectFunction.Arn}/invocations
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnDisconnectFunction.Arn}/invocations
   SendRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
@@ -277,13 +335,13 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri:
         Fn::Sub:
-            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SendMessageFunction.Arn}/invocations
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SendMessageFunction.Arn}/invocations
   Deployment:
     Type: AWS::ApiGatewayV2::Deployment
     DependsOn:
-    - ConnectRoute
-    - SendRoute
-    - DisconnectRoute
+      - ConnectRoute
+      - SendRoute
+      - DisconnectRoute
     Properties:
       ApiId: !Ref WebSocketMessagingApi
   Stage:
@@ -297,15 +355,15 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
-      - AttributeName: MeetingId
-        AttributeType: S
-      - AttributeName: AttendeeId
-        AttributeType: S
+        - AttributeName: MeetingId
+          AttributeType: S
+        - AttributeName: AttendeeId
+          AttributeType: S
       KeySchema:
-      - AttributeName: MeetingId
-        KeyType: HASH
-      - AttributeName: AttendeeId
-        KeyType: RANGE
+        - AttributeName: MeetingId
+          KeyType: HASH
+        - AttributeName: AttendeeId
+          KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
       SSESpecification:
         SSEEnabled: True
@@ -318,8 +376,8 @@ Resources:
       CodeUri: src/
       Handler: messaging.onconnect
       Policies:
-      - DynamoDBCrudPolicy:
-          TableName: !Ref ConnectionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConnectionsTable
   OnConnectPermission:
     Type: AWS::Lambda::Permission
     DependsOn:
@@ -335,8 +393,8 @@ Resources:
       CodeUri: src/
       Handler: messaging.authorize
       Policies:
-      - DynamoDBCrudPolicy:
-          TableName: !Ref ConnectionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConnectionsTable
   AuthorizePermission:
     Type: AWS::Lambda::Permission
     DependsOn:
@@ -365,8 +423,8 @@ Resources:
       CodeUri: src/
       Handler: messaging.ondisconnect
       Policies:
-      - DynamoDBCrudPolicy:
-          TableName: !Ref ConnectionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConnectionsTable
   OnDisconnectPermission:
     Type: AWS::Lambda::Permission
     DependsOn:
@@ -382,14 +440,14 @@ Resources:
       CodeUri: src/
       Handler: messaging.sendmessage
       Policies:
-      - DynamoDBCrudPolicy:
-          TableName: !Ref ConnectionsTable
-      - Statement:
-        - Effect: Allow
-          Action:
-          - 'execute-api:ManageConnections'
-          Resource:
-          - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketMessagingApi}/*'
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConnectionsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - 'execute-api:ManageConnections'
+              Resource:
+                - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketMessagingApi}/*'
   SendMessagePermission:
     Type: AWS::Lambda::Permission
     DependsOn:

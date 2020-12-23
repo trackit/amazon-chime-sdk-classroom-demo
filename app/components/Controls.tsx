@@ -215,6 +215,7 @@ export default function Controls(props: Props) {
                 }
                 // eslint-disable-next-line no-useless-return
                 if (pollStatus === PollStatus.Pending) return;
+                setPollStatus(pollStatus);
               }}
             >
               <i className="fas fa-poll-h" />

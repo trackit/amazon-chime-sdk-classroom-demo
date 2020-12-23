@@ -46,9 +46,9 @@ export default function Poll(props: Props) {
             }}
           />
         </h3>
-        {pollAnswers.map((_: string, index: number) => {
+        {pollAnswers.map((ans: string, index: number) => {
           return (
-            <h4 key={`choice-${index}`}>
+            <h4 key={`choice-${ans}`}>
               {intl.formatMessage(
                 {
                   id: 'Poll.choice'
