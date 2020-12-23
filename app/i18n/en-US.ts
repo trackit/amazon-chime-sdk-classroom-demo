@@ -52,6 +52,18 @@ export default {
   'Controls.focusOnMessage': `Focus on`,
   'Controls.focusOffMessage': `Focus off`,
 
+  'Poll.modalTitle': `Live poll`,
+  'Poll.title': 'Title',
+  'Poll.choice': 'Choice {id}',
+  'Poll.create': `Create a poll`,
+  'Poll.answer': `Answer to the poll`,
+  'Poll.checkout': `Checkout the current results`,
+  'Poll.cancel': `Cancel`,
+  'Poll.submit': `Submit`,
+  'Poll.vote': `Vote`,
+  'Poll.titleInputHolder': `Set the poll title here`,
+  'Poll.choiceInputHolder': `Set the choice for the option {id}`,
+
   'ScreenPicker.title': `Share your screen`,
   'ScreenPicker.applicationWindowTab': `Application window`,
   'ScreenPicker.yourEntireScreenTab': `Your entire screen`,

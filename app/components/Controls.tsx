@@ -4,6 +4,7 @@
 import classNames from 'classnames/bind';
 import React, { useContext, useEffect, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
+import Modal from 'react-modal';
 import { useHistory } from 'react-router-dom';
 
 import ChimeSdkWrapper from '../chime/ChimeSdkWrapper';
@@ -13,10 +14,13 @@ import getUIStateContext from '../context/getUIStateContext';
 import ClassMode from '../enums/ClassMode';
 import ViewMode from '../enums/ViewMode';
 import styles from './Controls.css';
+import ClassRoomStyles from './Classroom.css';
 import Tooltip from './Tooltip';
 import MessageTopic from '../enums/MessageTopic';
+import Poll, { PollStatus } from './Poll';
 
 const cx = classNames.bind(styles);
+const crcx = classNames.bind(ClassRoomStyles);
 
 enum VideoStatus {
   Disabled,
@@ -37,6 +41,12 @@ export default function Controls(props: Props) {
   const [muted, setMuted] = useState(false);
   const [focus, setFocus] = useState(false);
   const [videoStatus, setVideoStatus] = useState(VideoStatus.Disabled);
+  const [pollStatus, setPollStatus] = useState(
+    state.classMode === ClassMode.Teacher
+      ? PollStatus.Create
+      : PollStatus.Pending
+  );
+  const [pollModalStatus, setPollModalStatus] = useState(false);
   const intl = useIntl();
 
   useEffect(() => {
@@ -188,6 +198,45 @@ export default function Controls(props: Props) {
             </button>
           </Tooltip>
         )}
+      {viewMode !== ViewMode.ScreenShare && (
+        <>
+          <Tooltip
+            tooltip={
+              state.classMode === ClassMode.Teacher && pollStatus
+                ? intl.formatMessage({ id: 'Poll.create' })
+                : intl.formatMessage({ id: 'Poll.answer' })
+            }
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (state.classMode === ClassMode.Teacher) {
+                  setPollModalStatus(!pollModalStatus);
+                }
+                // eslint-disable-next-line no-useless-return
+                if (pollStatus === PollStatus.Pending) return;
+              }}
+            >
+              <i className="fas fa-poll-h" />
+            </button>
+          </Tooltip>
+          <Modal
+            isOpen={pollModalStatus}
+            contentLabel="Create a poll"
+            className={cx('modal')}
+            overlayClassName={crcx('modalOverlay')}
+            onRequestClose={() => {
+              setPollModalStatus(false);
+            }}
+          >
+            <Poll
+              onClickCancelButton={() => {
+                setPollModalStatus(false);
+              }}
+            />
+          </Modal>
+        </>
+      )}
       {viewMode !== ViewMode.ScreenShare && (
         <Tooltip
           tooltip={
