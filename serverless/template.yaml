@@ -108,14 +108,14 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
-        - AttributeName: "AttendeeId"
-          AttributeType: "S"
         - AttributeName: "PollId"
+          AttributeType: "S"
+        - AttributeName: "ResponseIdx"
           AttributeType: "S"
       KeySchema:
-        - AttributeName: "AttendeeId"
-          KeyType: "HASH"
         - AttributeName: "PollId"
+          KeyType: "HASH"
+        - AttributeName: "ResponseIdx"
           KeyType: "RANGE"
       ProvisionedThroughput:
         ReadCapacityUnits: 5
@@ -137,9 +137,12 @@ Resources:
   CreatePollLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: handlers.createPoll
+      Handler: poll.createPoll
       Runtime: nodejs10.x
       CodeUri: src/
+      Policies:
+          - DynamoDBCrudPolicy:
+              TableName: !Ref LivePoll
       Events:
         Api1:
           Type: Api
@@ -149,9 +152,12 @@ Resources:
   ResponsePollLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: handlers.answerPoll
+      Handler: poll.answerPoll
       Runtime: nodejs10.x
       CodeUri: src/
+      Policies:
+          - DynamoDBCrudPolicy:
+              TableName: !Ref LivePollResponse
       Events:
         Api1:
           Type: Api

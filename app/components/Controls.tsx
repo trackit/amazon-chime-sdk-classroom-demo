@@ -6,7 +6,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import Modal from 'react-modal';
 import { useHistory } from 'react-router-dom';
-
+import { DataMessage } from 'amazon-chime-sdk-js';
 import ChimeSdkWrapper from '../chime/ChimeSdkWrapper';
 import routes from '../constants/routes.json';
 import getChimeContext from '../context/getChimeContext';
@@ -17,7 +17,7 @@ import styles from './Controls.css';
 import ClassRoomStyles from './Classroom.css';
 import Tooltip from './Tooltip';
 import MessageTopic from '../enums/MessageTopic';
-import Poll, { PollStatus } from './Poll';
+import Poll, { PollData, PollStatus, PollStudent } from './Poll';
 
 const cx = classNames.bind(styles);
 const crcx = classNames.bind(ClassRoomStyles);
@@ -41,11 +41,9 @@ export default function Controls(props: Props) {
   const [muted, setMuted] = useState(false);
   const [focus, setFocus] = useState(false);
   const [videoStatus, setVideoStatus] = useState(VideoStatus.Disabled);
-  const [pollStatus, setPollStatus] = useState(
-    state.classMode === ClassMode.Teacher
-      ? PollStatus.Create
-      : PollStatus.Pending
-  );
+  const [currentPoll, setCurrentPoll] = useState({
+    status: PollStatus.Inactive
+  } as PollData);
   const [pollModalStatus, setPollModalStatus] = useState(false);
   const intl = useIntl();
 
@@ -53,13 +51,32 @@ export default function Controls(props: Props) {
     const callback = (localMuted: boolean) => {
       setMuted(localMuted);
     };
+    const pollCallback = (message: DataMessage) => {
+      if (state.classMode === ClassMode.Teacher) return;
+      // eslint-disable-next-line no-console
+      console.log('New message:', message);
+      const data = message.json() as PollData;
+      // eslint-disable-next-line no-console
+      console.log('reint: ', data);
+      if (message.topic !== MessageTopic.PollStatusUpdate) return;
+      setCurrentPoll({
+        ...data,
+        answered: false
+      });
+    };
     chime?.audioVideo?.realtimeSubscribeToMuteAndUnmuteLocalAudio(callback);
+    const pollStatusUpdateCallback = {
+      topic: MessageTopic.PollStatusUpdate,
+      callback: pollCallback
+    };
+    chime?.subscribeToMessageUpdate(pollStatusUpdateCallback);
     return () => {
       if (chime && chime?.audioVideo) {
         chime?.audioVideo?.realtimeUnsubscribeToMuteAndUnmuteLocalAudio(
           callback
         );
       }
+      chime?.unsubscribeFromMessageUpdate(pollStatusUpdateCallback);
     };
   }, []);
 
@@ -202,7 +219,7 @@ export default function Controls(props: Props) {
         <>
           <Tooltip
             tooltip={
-              state.classMode === ClassMode.Teacher && pollStatus
+              state.classMode === ClassMode.Teacher
                 ? intl.formatMessage({ id: 'Poll.create' })
                 : intl.formatMessage({ id: 'Poll.answer' })
             }
@@ -210,12 +227,7 @@ export default function Controls(props: Props) {
             <button
               type="button"
               onClick={() => {
-                if (state.classMode === ClassMode.Teacher) {
-                  setPollModalStatus(!pollModalStatus);
-                }
-                // eslint-disable-next-line no-useless-return
-                if (pollStatus === PollStatus.Pending) return;
-                setPollStatus(pollStatus);
+                setPollModalStatus(!pollModalStatus);
               }}
             >
               <i className="fas fa-poll-h" />
@@ -230,11 +242,21 @@ export default function Controls(props: Props) {
               setPollModalStatus(false);
             }}
           >
-            <Poll
-              onClickCancelButton={() => {
-                setPollModalStatus(false);
-              }}
-            />
+            {state.classMode === ClassMode.Teacher && (
+              <Poll
+                onClickCancelButton={() => {
+                  setPollModalStatus(false);
+                }}
+              />
+            )}
+            {state.classMode === ClassMode.Student && (
+              <PollStudent
+                poll={currentPoll}
+                onClickCancelButton={() => {
+                  setPollModalStatus(false);
+                }}
+              />
+            )}
           </Modal>
         </>
       )}
