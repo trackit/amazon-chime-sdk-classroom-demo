@@ -42,7 +42,10 @@ export default function Controls(props: Props) {
   const [focus, setFocus] = useState(false);
   const [videoStatus, setVideoStatus] = useState(VideoStatus.Disabled);
   const [currentPoll, setCurrentPoll] = useState({
-    status: PollStatus.Inactive
+    pollId: '',
+    status: PollStatus.Inactive,
+    title: '',
+    answers: ['', '', '', '']
   } as PollData);
   const [pollModalStatus, setPollModalStatus] = useState(false);
   const intl = useIntl();
@@ -53,16 +56,18 @@ export default function Controls(props: Props) {
     };
     const pollCallback = (message: DataMessage) => {
       if (state.classMode === ClassMode.Teacher) return;
-      // eslint-disable-next-line no-console
-      console.log('New message:', message);
       const data = message.json() as PollData;
       // eslint-disable-next-line no-console
-      console.log('reint: ', data);
+      console.log('new message: ', data);
       if (message.topic !== MessageTopic.PollStatusUpdate) return;
-      setCurrentPoll({
-        ...data,
-        answered: false
-      });
+      console.log('before:', currentPoll);
+      const newPollData = data;
+      newPollData.answered = false;
+      // setCurrentPoll({
+      //   ...data,
+      //   answered: false
+      // });
+      setCurrentPoll(newPollData);
     };
     chime?.audioVideo?.realtimeSubscribeToMuteAndUnmuteLocalAudio(callback);
     const pollStatusUpdateCallback = {
@@ -244,6 +249,7 @@ export default function Controls(props: Props) {
           >
             {state.classMode === ClassMode.Teacher && (
               <Poll
+                existingPoll={currentPoll}
                 onClickCancelButton={() => {
                   setPollModalStatus(false);
                 }}
@@ -251,7 +257,7 @@ export default function Controls(props: Props) {
             )}
             {state.classMode === ClassMode.Student && (
               <PollStudent
-                poll={currentPoll}
+                existingPoll={currentPoll}
                 onClickCancelButton={() => {
                   setPollModalStatus(false);
                 }}

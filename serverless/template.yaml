@@ -110,13 +110,9 @@ Resources:
       AttributeDefinitions:
         - AttributeName: "PollId"
           AttributeType: "S"
-        - AttributeName: "ResponseIdx"
-          AttributeType: "S"
       KeySchema:
         - AttributeName: "PollId"
           KeyType: "HASH"
-        - AttributeName: "ResponseIdx"
-          KeyType: "RANGE"
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
@@ -163,6 +159,21 @@ Resources:
           Type: Api
           Properties:
             Path: /answerpoll
+            Method: POST
+  ListPollAnswerLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: poll.listAnswer
+      Runtime: nodejs10.x
+      CodeUri: src/
+      Policies:
+          - DynamoDBCrudPolicy:
+              TableName: !Ref LivePollResponse
+      Events:
+        Api1:
+          Type: Api
+          Properties:
+            Path: /listpollanswer
             Method: POST
   ChimeSdkCreateMeetingLambda:
     Type: 'AWS::Serverless::Function'

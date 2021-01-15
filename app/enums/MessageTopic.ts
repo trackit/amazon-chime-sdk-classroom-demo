@@ -5,7 +5,8 @@ enum MessageTopic {
   Chat = 'chat-message',
   RaiseHand = 'raise-hand',
   DismissHand = 'dismiss-hand',
-  Focus = 'focus'
+  Focus = 'focus',
+  PollStatusUpdate = 'poll-status-update'
 }
 
 export default MessageTopic;

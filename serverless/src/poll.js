@@ -31,7 +31,6 @@ exports.answerPoll = async (event, context, callback) => {
     'answerIdx',
   ];
   for (const i in bodyFmt) {
-    console.log("prop:", bodyFmt[i]);
     if (!jsonEvent.hasOwnProperty(bodyFmt[i]))
       return sendResponse(callback, {
         error: `missing property '${bodyFmt[i]}' in the body`
@@ -59,23 +58,19 @@ const pollState = {
 }
 
 exports.createPoll = async (event, context, callback) => {
-  console.log(event.body);
   const jsonEvent = JSON.parse(event.body);
-  console.log("body: ", jsonEvent);
   const bodyFmt = [
     'meetingId',
     'title',
     'answers'
   ];
   for (const i in bodyFmt) {
-    console.log("prop:", bodyFmt[i]);
     if (!jsonEvent.hasOwnProperty(bodyFmt[i]))
       return sendResponse(callback, {
         error: `missing property '${bodyFmt[i]}' in the body`
       }, 404);
   }
   const pollId = uuid();
-  console.log("beofre puting item");
   await ddb.putItem({
     TableName: process.env.POLL_TABLE_NAME,
     Item: {
@@ -101,5 +96,22 @@ exports.createPoll = async (event, context, callback) => {
 
 
 exports.listAnswer = async (event, context, callback) => {
-
+  const jsonEvent = JSON.parse(event.body);
+  console.log("pollid:", jsonEvent.pollId)
+  const result = await ddb.query({
+    TableName: process.env.ANSWERPOLL_TABLE_NAME,
+    KeyConditionExpression: "#pId = :pollId",
+    ExpressionAttributeNames: {
+      "#pId": "PollId"
+    },
+    ExpressionAttributeValues: {
+      ":pollId": {
+        'S': jsonEvent.pollId
+      }
+    }
+  }).promise();
+  const stats = [0, 0, 0, 0];
+  for (const i in result.Items)
+    stats[parseInt(result.Items[i].ResponseIdx.S)]++;
+  sendResponse(callback, {count: result.Count, stats: stats}, 200);
 }

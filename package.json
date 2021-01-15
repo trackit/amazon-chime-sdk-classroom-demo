@@ -1,6 +1,6 @@
 {
   "name": "amazon-chime-sdk-classroom-demo",
-  "productName": "MyClassroom",
+  "productName": "myclassroom",
   "version": "1.0.0",
   "description": "Demonstrates how to use the Amazon Chime SDK to build an online classroom with Electron and React",
   "scripts": {
@@ -52,8 +52,8 @@
     ]
   },
   "build": {
-    "productName": "MyClassroom",
-    "appId": "com.amazonaws.services.chime.sdk.classroom.demo.MyClassroom",
+    "productName": "myclassroom",
+    "appId": "com.amazonaws.services.chime.sdk.classroom.demo.myclassroom",
     "artifactName": "${productName}.${ext}",
     "files": [
       "dist/",
@@ -206,7 +206,7 @@
     "cross-spawn": "^7.0.1",
     "css-loader": "^3.4.2",
     "detect-port": "^1.3.0",
-    "electron": "7.2.4",
+    "electron": "^8.2.0",
     "electron-builder": "^22.3.6",
     "electron-devtools-installer": "^2.2.4",
     "electron-rebuild": "^1.10.0",
